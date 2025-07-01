@@ -24,8 +24,12 @@ let watchId, startTime, lapStartTime, timerInterval;
 let totalDistance = 0;
 let previousPosition = null;
 let lapCount = 0;
+let isRunning = false;
 
 function start() {
+  if (isRunning) return; 
+  isRunning = true;
+  
   startTime = lapStartTime = new Date();
   lapCount = 0;
   timerInterval = setInterval(updateTimer, 100);
@@ -35,6 +39,9 @@ function start() {
 }
 
 function stop() {
+  if (!isRunning) return;
+  isRunning = false;
+  
   clearInterval(timerInterval);
   navigator.geolocation.clearWatch(watchId);
 }
