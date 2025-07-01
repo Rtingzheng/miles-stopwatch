@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>里程跳錶工具</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2196f3">
+  <link rel="icon" href="icon-192.png">
+</head>
+<body>
+  <h1>🏃‍♂️ 里程跳錶工具</h1>
+  <p>目標每 <input type="number" id="lapDistance" value="1" step="0.1"> 公里 記一圈</p>
+  <p>總距離：<span id="distance">0.00</span> km</p>
+  <p>時間：<span id="timer">0:00.00</span></p>
+  <button onclick="start()">開始</button>
+  <button onclick="stop()">暫停</button>
+  <button onclick="reset()">重置</button>
+  <h2>圈數記錄：</h2>
+  <ul id="laps"></ul>
+
+<script>
+let watchId, startTime, lapStartTime, timerInterval;
+let totalDistance = 0;
+let previousPosition = null;
+let lapCount = 0;
+
+function start() {
+  startTime = lapStartTime = new Date();
+  lapCount = 0;
+  timerInterval = setInterval(updateTimer, 100);
+  watchId = navigator.geolocation.watchPosition(updatePosition, console.error, {
+    enableHighAccuracy: true, maximumAge: 1000, timeout: 5000
+  });
+}
+
+function stop() {
+  clearInterval(timerInterval);
+  navigator.geolocation.clearWatch(watchId);
+}
+
+function reset() {
+  stop();
+  totalDistance = 0;
+  previousPosition = null;
+  lapCount = 0;
+  document.getElementById('distance').textContent = '0.00';
+  document.getElementById('timer').textContent = '0:00.00';
+  document.getElementById('laps').innerHTML = '';
+}
+
+function updateTimer() {
+  const now = new Date();
+  const diff = now - startTime;
+  const minutes = Math.floor(diff / 60000);
+  const seconds = ((diff % 60000) / 1000).toFixed(2);
+  document.getElementById('timer').textContent = `${minutes}:${seconds.padStart(5, '0')}`;
+}
+
+function updatePosition(position) {
+  const lat = position.coords.latitude;
+  const lon = position.coords.longitude;
+  const current = {lat, lon};
+  if (previousPosition) {
+    const d = getDistance(previousPosition, current);
+    totalDistance += d;
+    document.getElementById('distance').textContent = totalDistance.toFixed(2);
+    const lapDistance = parseFloat(document.getElementById('lapDistance').value);
+    if (totalDistance >= (lapCount + 1) * lapDistance) {
+      const now = new Date();
+      const lapTime = ((now - lapStartTime) / 1000).toFixed(2);
+      lapCount++;
+      const li = document.createElement('li');
+      li.textContent = `圈 ${lapCount} - ${lapTime}s`;
+      document.getElementById('laps').appendChild(li);
+      lapStartTime = now;
+    }
+  }
+  previousPosition = current;
+}
+
+function getDistance(p1, p2) {
+  const R = 6371;
+  const dLat = (p2.lat - p1.lat) * Math.PI / 180;
+  const dLon = (p2.lon - p1.lon) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(p1.lat * Math.PI / 180) * Math.cos(p2.lat * Math.PI / 180) *
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
+// 註冊 service worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('service-worker.js');
+}
+</script>
+</body>
+</html>
