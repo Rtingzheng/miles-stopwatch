@@ -65,6 +65,8 @@ function updateTimer() {
 }
 
 function updatePosition(position) {
+  console.log("GPS:", position);
+  
   const lat = position.coords.latitude;
   const lon = position.coords.longitude;
   const current = {lat, lon};
